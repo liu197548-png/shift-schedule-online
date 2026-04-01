@@ -1,0 +1,1849 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能排班工具 - 在线版</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .main-content {
+            padding: 30px;
+        }
+
+        .section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid #e9ecef;
+        }
+
+        .section-title {
+            font-size: 1.4em;
+            color: #495057;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title .icon {
+            font-size: 1.2em;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #495057;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 0.9em;
+        }
+
+        .shift-config-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .shift-item {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            border: 2px solid #e9ecef;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .shift-item:hover {
+            border-color: #667eea;
+        }
+
+        .shift-color {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .shift-input {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .shift-input label {
+            font-size: 0.85em;
+            color: #6c757d;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .shift-input input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+        }
+
+        .shift-input input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .staff-section {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .staff-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .group-list {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .group-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .group-item:hover,
+        .group-item.active {
+            border-color: #667eea;
+            background: #e7e9ff;
+        }
+
+        .group-item h4 {
+            color: #495057;
+            margin-bottom: 8px;
+        }
+
+        .group-item .staff-count {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+
+        .staff-detail {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .staff-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .staff-tag {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .staff-tag .remove {
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .staff-tag .remove:hover {
+            opacity: 1;
+        }
+
+        .add-staff-form {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .add-staff-form input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+        }
+
+        .requirement-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #dee2e6;
+            padding-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            background: transparent;
+            color: #6c757d;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .tab-btn:hover,
+        .tab-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .calendar-day:hover {
+            border-color: #667eea;
+            background: #e7e9ff;
+        }
+
+        .calendar-day.selected {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .calendar-day.holiday {
+            background: #ffc107;
+            color: #000;
+            border-color: #ffc107;
+        }
+
+        .calendar-day.weekend {
+            background: #ff6b6b;
+            color: white;
+            border-color: #ff6b6b;
+        }
+
+        .calendar-day .day-num {
+            font-size: 1.2em;
+        }
+
+        .calendar-day .day-week {
+            font-size: 0.7em;
+            opacity: 0.8;
+        }
+
+        .preference-list {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 15px;
+        }
+
+        .preference-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #e9ecef;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .preference-item:last-child {
+            border-bottom: none;
+        }
+
+        .preference-info h5 {
+            color: #495057;
+            margin-bottom: 5px;
+        }
+
+        .preference-info p {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+
+        .schedule-result {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85em;
+        }
+
+        .schedule-table th,
+        .schedule-table td {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            text-align: center;
+            min-width: 40px;
+        }
+
+        .schedule-table th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+
+        .schedule-table th:first-child,
+        .schedule-table td:first-child {
+            position: sticky;
+            left: 0;
+            background: #f8f9fa;
+            z-index: 1;
+            min-width: 100px;
+        }
+
+        .schedule-table th:first-child {
+            background: #667eea;
+            z-index: 2;
+        }
+
+        .schedule-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .schedule-table tr:hover {
+            background: #e7e9ff;
+        }
+
+        .shift-早7 { background: #4dabf7; color: white; }
+        .shift-早班 { background: #51cf66; color: white; }
+        .shift-中班 { background: #ffd43b; color: #000; }
+        .shift-晚班 { background: #9775fa; color: white; }
+        .shift-休 { background: #adb5bd; color: white; }
+
+        .stats-row {
+            background: #e9ecef !important;
+            font-weight: 600;
+        }
+
+        .stats-row td {
+            color: #495057;
+        }
+
+        .action-bar {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            padding: 25px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            flex-wrap: wrap;
+        }
+
+        .action-bar .btn {
+            font-size: 1.1em;
+            padding: 15px 30px;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h3 {
+            color: #495057;
+        }
+
+        .modal-close {
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #6c757d;
+        }
+
+        .modal-close:hover {
+            color: #495057;
+        }
+
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.9);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .loading.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid #e9ecef;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading p {
+            margin-top: 20px;
+            color: #495057;
+            font-size: 1.1em;
+        }
+
+        .share-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .share-section h3 {
+            margin-bottom: 15px;
+        }
+
+        .share-url {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 10px;
+            font-family: monospace;
+            word-break: break-all;
+            margin-bottom: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .form-row {
+                flex-direction: column;
+            }
+
+            .shift-item {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .action-bar {
+                flex-direction: column;
+            }
+
+            .action-bar .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .requirement-tabs {
+                justify-content: center;
+            }
+
+            .tab-btn {
+                padding: 8px 15px;
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>智能排班工具</h1>
+            <p>支持多班次、多组别、个人偏好和假期安排的智能排班系统</p>
+        </div>
+
+        <div class="main-content">
+            <!-- 基本信息 -->
+            <div class="section">
+                <h2 class="section-title">
+                    <span class="icon">📅</span>
+                    基本信息
+                </h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>排班年份</label>
+                        <select id="year">
+                            <option value="2025">2025年</option>
+                            <option value="2026" selected>2026年</option>
+                            <option value="2027">2027年</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>排班月份</label>
+                        <select id="month">
+                            <option value="1">1月</option>
+                            <option value="2">2月</option>
+                            <option value="3">3月</option>
+                            <option value="4" selected>4月</option>
+                            <option value="5">5月</option>
+                            <option value="6">6月</option>
+                            <option value="7">7月</option>
+                            <option value="8">8月</option>
+                            <option value="9">9月</option>
+                            <option value="10">10月</option>
+                            <option value="11">11月</option>
+                            <option value="12">12月</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>目标出勤率 (%)</label>
+                        <input type="number" id="attendanceRate" value="72" min="50" max="100">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 班次配置 -->
+            <div class="section">
+                <h2 class="section-title">
+                    <span class="icon">⏰</span>
+                    班次配置
+                </h2>
+                <div class="alert alert-info">
+                    配置各班次的时间段和每日最低在班人数要求。系统将根据在班人数自动分配班次。
+                </div>
+                <div class="shift-config-list" id="shiftConfigList">
+                </div>
+                <div style="margin-top: 15px;">
+                    <button class="btn btn-secondary btn-sm" onclick="addShift()">
+                        <span>+</span> 添加班次
+                    </button>
+                </div>
+            </div>
+
+            <!-- 人员管理 -->
+            <div class="section">
+                <h2 class="section-title">
+                    <span class="icon">👥</span>
+                    人员管理
+                </h2>
+                <div class="alert alert-info">
+                    添加组别和人员。建议每组至少3-4人，以确保班次覆盖。
+                </div>
+                <div class="staff-section">
+                    <div>
+                        <h4 style="margin-bottom: 15px; color: #495057;">组别列表</h4>
+                        <div class="group-list" id="groupList">
+                        </div>
+                        <div style="margin-top: 15px;">
+                            <button class="btn btn-secondary btn-sm" onclick="addGroup()">
+                                <span>+</span> 添加组别
+                            </button>
+                        </div>
+                    </div>
+                    <div class="staff-detail" id="staffDetail">
+                        <h4 style="margin-bottom: 15px; color: #495057;">
+                            <span id="currentGroupName">请选择组别</span>
+                        </h4>
+                        <div class="staff-list" id="staffList">
+                        </div>
+                        <div class="add-staff-form" id="addStaffForm" style="display: none;">
+                            <input type="text" id="newStaffName" placeholder="输入人员姓名">
+                            <button class="btn btn-primary" onclick="addStaff()">添加</button>
+                        </div>
+                        <p id="noGroupSelected" style="color: #6c757d; text-align: center; padding: 40px;">
+                            请先选择或创建一个组别
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 特殊要求 -->
+            <div class="section">
+                <h2 class="section-title">
+                    <span class="icon">⚙️</span>
+                    特殊要求配置
+                </h2>
+                <div class="requirement-tabs">
+                    <button class="tab-btn active" onclick="switchTab('restDays')">休息日偏好</button>
+                    <button class="tab-btn" onclick="switchTab('shiftPrefs')">班次偏好</button>
+                    <button class="tab-btn" onclick="switchTab('holidays')">假期设置</button>
+                    <button class="tab-btn" onclick="switchTab('fixedShifts')">固定班次</button>
+                </div>
+
+                <div class="tab-content active" id="restDaysTab">
+                    <div class="alert alert-info">
+                        选择人员并标记其希望的休息日期。系统会尽量满足，但可能因排班约束而调整。
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>选择人员</label>
+                            <select id="restDayStaff" onchange="loadRestDays()">
+                                <option value="">请选择</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="restDaysCalendar" style="display: none;">
+                        <h4 style="margin: 20px 0 15px; color: #495057;">点击选择休息日期：</h4>
+                        <div class="calendar-grid" id="restDaysGrid">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="shiftPrefsTab">
+                    <div class="alert alert-info">
+                        设置人员对特定班次的偏好：多排、少排或正常。
+                    </div>
+                    <div class="preference-list" id="shiftPrefsList">
+                    </div>
+                </div>
+
+                <div class="tab-content" id="holidaysTab">
+                    <div class="alert alert-info">
+                        标记节假日日期。节假日可设置特殊排班规则（如必须上班或优先休息）。
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>假期名称</label>
+                            <input type="text" id="holidayName" placeholder="如：清明节、五一劳动节">
+                        </div>
+                        <div class="form-group">
+                            <label>假期类型</label>
+                            <select id="holidayType">
+                                <option value="rest">优先休息</option>
+                                <option value="work">必须上班</option>
+                                <option value="normal">正常排班</option>
+                            </select>
+                        </div>
+                    </div>
+                    <h4 style="margin: 20px 0 15px; color: #495057;">选择假期日期：</h4>
+                    <div class="calendar-grid" id="holidaysGrid">
+                    </div>
+                    <div style="margin-top: 15px;">
+                        <button class="btn btn-primary" onclick="addHoliday()">添加假期</button>
+                    </div>
+                    <div class="preference-list" id="holidaysList" style="margin-top: 20px;">
+                    </div>
+                </div>
+
+                <div class="tab-content" id="fixedShiftsTab">
+                    <div class="alert alert-info">
+                        设置特定人员在特定日期必须上的班次。
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>选择人员</label>
+                            <select id="fixedShiftStaff">
+                                <option value="">请选择</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>固定班次</label>
+                            <select id="fixedShiftType">
+                                <option value="">请选择</option>
+                            </select>
+                        </div>
+                    </div>
+                    <h4 style="margin: 20px 0 15px; color: #495057;">选择应用日期：</h4>
+                    <div class="calendar-grid" id="fixedShiftsGrid">
+                    </div>
+                    <div style="margin-top: 15px;">
+                        <button class="btn btn-primary" onclick="addFixedShift()">添加固定班次</button>
+                    </div>
+                    <div class="preference-list" id="fixedShiftsList" style="margin-top: 20px;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 排班约束 -->
+            <div class="section">
+                <h2 class="section-title">
+                    <span class="icon">🔒</span>
+                    排班约束
+                </h2>
+                <div class="alert alert-info">
+                    配置排班算法的行为参数。默认值适用于大多数场景。
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>班次均衡权重</label>
+                        <input type="number" id="balanceWeight" value="1.8" step="0.1" min="0.5" max="5">
+                        <small style="color: #6c757d;">越高越追求各班次人数均衡</small>
+                    </div>
+                    <div class="form-group">
+                        <label>连续同班次奖励</label>
+                        <input type="number" id="sameShiftBonus" value="5" min="0" max="20">
+                        <small style="color: #6c757d;">鼓励连续多天同班次</small>
+                    </div>
+                    <div class="form-group">
+                        <label>晚→早衔接惩罚</label>
+                        <input type="number" id="lateToEarlyPenalty" value="50" min="0" max="100">
+                        <small style="color: #6c757d;">禁止晚班后接早班（建议>30）</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="action-bar">
+            <button class="btn btn-secondary" onclick="saveConfig()">
+                <span>💾</span> 保存配置
+            </button>
+            <button class="btn btn-secondary" onclick="loadConfig()">
+                <span>📂</span> 加载配置
+            </button>
+            <button class="btn btn-primary" onclick="generateSchedule()">
+                <span>⚡</span> 生成排班表
+            </button>
+        </div>
+    </div>
+
+    <div class="modal" id="resultModal">
+        <div class="modal-content" style="max-width: 95%; width: 95%;">
+            <div class="modal-header">
+                <h3>排班结果</h3>
+                <span class="modal-close" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="schedule-result" id="scheduleResult">
+            </div>
+            <div style="margin-top: 20px; text-align: center;">
+                <button class="btn btn-success" onclick="exportToExcel()">
+                    <span>📊</span> 导出Excel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p>正在生成排班表，请稍候...</p>
+    </div>
+
+    <script>
+        let config = {
+            year: 2026,
+            month: 4,
+            attendanceRate: 72,
+            shifts: [
+                { name: '早7', time: '07:00-16:00', color: '#4dabf7', minStaff: 1 },
+                { name: '早班', time: '08:00-17:00', color: '#51cf66', minStaff: 1 },
+                { name: '中班', time: '13:00-22:00', color: '#ffd43b', minStaff: 1 },
+                { name: '晚班', time: '15:00-24:00', color: '#9775fa', minStaff: 1 }
+            ],
+            groups: [],
+            staffRestDays: {},
+            staffShiftPrefs: {},
+            holidays: [],
+            fixedShifts: {},
+            constraints: {
+                balanceWeight: 1.8,
+                sameShiftBonus: 5,
+                lateToEarlyPenalty: 50
+            }
+        };
+
+        let currentGroup = null;
+        let currentSchedule = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            renderShiftConfig();
+            renderGroupList();
+            initCalendars();
+            updateStaffSelects();
+        });
+
+        function renderShiftConfig() {
+            const container = document.getElementById('shiftConfigList');
+            container.innerHTML = config.shifts.map((shift, index) => `
+                <div class="shift-item">
+                    <input type="color" class="shift-color" value="${shift.color}"
+                           onchange="updateShift(${index}, 'color', this.value)">
+                    <div class="shift-input">
+                        <label>班次名称</label>
+                        <input type="text" value="${shift.name}"
+                               onchange="updateShift(${index}, 'name', this.value)">
+                    </div>
+                    <div class="shift-input">
+                        <label>时间段</label>
+                        <input type="text" value="${shift.time}"
+                               onchange="updateShift(${index}, 'time', this.value)">
+                    </div>
+                    <div class="shift-input" style="max-width: 120px;">
+                        <label>最低人数</label>
+                        <input type="number" value="${shift.minStaff}" min="0"
+                               onchange="updateShift(${index}, 'minStaff', parseInt(this.value))">
+                    </div>
+                    <button class="btn btn-danger btn-sm" onclick="removeShift(${index})"
+                            ${config.shifts.length <= 1 ? 'disabled' : ''}>
+                        删除
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function updateShift(index, field, value) {
+            config.shifts[index][field] = value;
+            updateFixedShiftOptions();
+        }
+
+        function addShift() {
+            config.shifts.push({
+                name: '新班次',
+                time: '09:00-18:00',
+                color: '#adb5bd',
+                minStaff: 1
+            });
+            renderShiftConfig();
+            updateFixedShiftOptions();
+        }
+
+        function removeShift(index) {
+            if (config.shifts.length > 1) {
+                config.shifts.splice(index, 1);
+                renderShiftConfig();
+                updateFixedShiftOptions();
+            }
+        }
+
+        function renderGroupList() {
+            const container = document.getElementById('groupList');
+            if (config.groups.length === 0) {
+                container.innerHTML = '<p style="color: #6c757d; text-align: center;">暂无组别</p>';
+                return;
+            }
+            container.innerHTML = config.groups.map((group, index) => `
+                <div class="group-item ${currentGroup === index ? 'active' : ''}"
+                     onclick="selectGroup(${index})">
+                    <h4>${group.name}</h4>
+                    <p class="staff-count">${group.staff.length} 人</p>
+                </div>
+            `).join('');
+        }
+
+        function addGroup() {
+            const name = prompt('请输入组别名称：', `组别${config.groups.length + 1}`);
+            if (name) {
+                config.groups.push({ name, staff: [] });
+                renderGroupList();
+                selectGroup(config.groups.length - 1);
+            }
+        }
+
+        function selectGroup(index) {
+            currentGroup = index;
+            renderGroupList();
+            renderStaffList();
+        }
+
+        function renderStaffList() {
+            const container = document.getElementById('staffList');
+            const form = document.getElementById('addStaffForm');
+            const noSelect = document.getElementById('noGroupSelected');
+            const groupName = document.getElementById('currentGroupName');
+
+            if (currentGroup === null) {
+                container.innerHTML = '';
+                form.style.display = 'none';
+                noSelect.style.display = 'block';
+                groupName.textContent = '请选择组别';
+                return;
+            }
+
+            const group = config.groups[currentGroup];
+            groupName.textContent = group.name;
+            noSelect.style.display = 'none';
+            form.style.display = 'flex';
+
+            if (group.staff.length === 0) {
+                container.innerHTML = '<p style="color: #6c757d; width: 100%;">暂无人员</p>';
+            } else {
+                container.innerHTML = group.staff.map((staff, index) => `
+                    <div class="staff-tag">
+                        ${staff}
+                        <span class="remove" onclick="removeStaff(${index})">&times;</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function addStaff() {
+            const input = document.getElementById('newStaffName');
+            const name = input.value.trim();
+            if (name && currentGroup !== null) {
+                config.groups[currentGroup].staff.push(name);
+                input.value = '';
+                renderStaffList();
+                renderGroupList();
+                updateStaffSelects();
+            }
+        }
+
+        function removeStaff(index) {
+            if (currentGroup !== null) {
+                const staffName = config.groups[currentGroup].staff[index];
+                config.groups[currentGroup].staff.splice(index, 1);
+                delete config.staffRestDays[staffName];
+                delete config.staffShiftPrefs[staffName];
+                Object.keys(config.fixedShifts).forEach(date => {
+                    delete config.fixedShifts[date][staffName];
+                });
+                renderStaffList();
+                renderGroupList();
+                updateStaffSelects();
+            }
+        }
+
+        function updateStaffSelects() {
+            const allStaff = getAllStaff();
+            const selects = ['restDayStaff', 'fixedShiftStaff'];
+
+            selects.forEach(id => {
+                const select = document.getElementById(id);
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">请选择</option>' +
+                    allStaff.map(s => `<option value="${s}">${s}</option>`).join('');
+                select.value = currentValue;
+            });
+
+            updateFixedShiftOptions();
+            renderShiftPrefsList();
+        }
+
+        function getAllStaff() {
+            return config.groups.flatMap(g => g.staff);
+        }
+
+        function initCalendars() {
+            renderCalendar('restDaysGrid', toggleRestDay);
+            renderCalendar('holidaysGrid', toggleHolidaySelection);
+            renderCalendar('fixedShiftsGrid', toggleFixedShiftSelection);
+        }
+
+        function renderCalendar(containerId, clickHandler) {
+            const container = document.getElementById(containerId);
+            const year = parseInt(document.getElementById('year').value);
+            const month = parseInt(document.getElementById('month').value);
+            const daysInMonth = new Date(year, month, 0).getDate();
+
+            const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
+            const firstDayWeek = new Date(year, month - 1, 1).getDay();
+
+            let html = '';
+
+            weekDays.forEach(day => {
+                html += `<div style="text-align: center; font-weight: bold; color: #495057; padding: 10px;">${day}</div>`;
+            });
+
+            for (let i = 0; i < firstDayWeek; i++) {
+                html += '<div></div>';
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const weekDay = new Date(year, month - 1, day).getDay();
+                const isWeekend = weekDay === 0 || weekDay === 6;
+                const isHoliday = config.holidays.some(h => h.dates.includes(date));
+
+                let className = 'calendar-day';
+                if (isHoliday) className += ' holiday';
+                else if (isWeekend) className += ' weekend';
+
+                html += `
+                    <div class="${className}" data-date="${date}" onclick="${clickHandler.name}(this)">
+                        <span class="day-num">${day}</span>
+                        <span class="day-week">${weekDays[weekDay]}</span>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+
+            if (tabName === 'restDays') {
+                loadRestDays();
+            } else if (tabName === 'holidays') {
+                renderHolidaysList();
+            } else if (tabName === 'fixedShifts') {
+                renderFixedShiftsList();
+            }
+        }
+
+        function loadRestDays() {
+            const staff = document.getElementById('restDayStaff').value;
+            const calendar = document.getElementById('restDaysCalendar');
+
+            if (!staff) {
+                calendar.style.display = 'none';
+                return;
+            }
+
+            calendar.style.display = 'block';
+
+            const restDays = config.staffRestDays[staff] || [];
+            document.querySelectorAll('#restDaysGrid .calendar-day').forEach(day => {
+                const date = day.dataset.date;
+                if (restDays.includes(date)) {
+                    day.classList.add('selected');
+                } else {
+                    day.classList.remove('selected');
+                }
+            });
+        }
+
+        function toggleRestDay(element) {
+            const staff = document.getElementById('restDayStaff').value;
+            if (!staff) {
+                alert('请先选择人员');
+                return;
+            }
+
+            const date = element.dataset.date;
+            if (!config.staffRestDays[staff]) {
+                config.staffRestDays[staff] = [];
+            }
+
+            const index = config.staffRestDays[staff].indexOf(date);
+            if (index > -1) {
+                config.staffRestDays[staff].splice(index, 1);
+                element.classList.remove('selected');
+            } else {
+                config.staffRestDays[staff].push(date);
+                element.classList.add('selected');
+            }
+        }
+
+        function renderShiftPrefsList() {
+            const container = document.getElementById('shiftPrefsList');
+            const allStaff = getAllStaff();
+
+            if (allStaff.length === 0) {
+                container.innerHTML = '<p style="color: #6c757d; text-align: center;">请先添加人员</p>';
+                return;
+            }
+
+            container.innerHTML = allStaff.map(staff => {
+                const prefs = config.staffShiftPrefs[staff] || {};
+                return `
+                    <div class="preference-item">
+                        <div class="preference-info">
+                            <h5>${staff}</h5>
+                            <p>设置对各班次的偏好</p>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            ${config.shifts.map(shift => `
+                                <select onchange="updateShiftPref('${staff}', '${shift.name}', this.value)"
+                                        style="padding: 8px; border-radius: 6px; border: 2px solid #dee2e6;">
+                                    <option value="normal" ${(prefs[shift.name] || 'normal') === 'normal' ? 'selected' : ''}>
+                                        ${shift.name}: 正常
+                                    </option>
+                                    <option value="more" ${prefs[shift.name] === 'more' ? 'selected' : ''}>
+                                        ${shift.name}: 多排
+                                    </option>
+                                    <option value="fewer" ${prefs[shift.name] === 'fewer' ? 'selected' : ''}>
+                                        ${shift.name}: 少排
+                                    </option>
+                                </select>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateShiftPref(staff, shift, value) {
+            if (!config.staffShiftPrefs[staff]) {
+                config.staffShiftPrefs[staff] = {};
+            }
+            config.staffShiftPrefs[staff][shift] = value;
+        }
+
+        let selectedHolidayDates = [];
+
+        function toggleHolidaySelection(element) {
+            const date = element.dataset.date;
+            const index = selectedHolidayDates.indexOf(date);
+
+            if (index > -1) {
+                selectedHolidayDates.splice(index, 1);
+                element.classList.remove('selected');
+            } else {
+                selectedHolidayDates.push(date);
+                element.classList.add('selected');
+            }
+        }
+
+        function addHoliday() {
+            const name = document.getElementById('holidayName').value.trim();
+            const type = document.getElementById('holidayType').value;
+
+            if (!name) {
+                alert('请输入假期名称');
+                return;
+            }
+
+            if (selectedHolidayDates.length === 0) {
+                alert('请选择至少一个日期');
+                return;
+            }
+
+            config.holidays.push({
+                name,
+                type,
+                dates: [...selectedHolidayDates]
+            });
+
+            document.getElementById('holidayName').value = '';
+            selectedHolidayDates = [];
+            renderCalendar('holidaysGrid', toggleHolidaySelection);
+            renderHolidaysList();
+            renderCalendar('restDaysGrid', toggleRestDay);
+            renderCalendar('fixedShiftsGrid', toggleFixedShiftSelection);
+        }
+
+        function renderHolidaysList() {
+            const container = document.getElementById('holidaysList');
+
+            if (config.holidays.length === 0) {
+                container.innerHTML = '<p style="color: #6c757d; text-align: center;">暂无假期设置</p>';
+                return;
+            }
+
+            container.innerHTML = config.holidays.map((holiday, index) => `
+                <div class="preference-item">
+                    <div class="preference-info">
+                        <h5>${holiday.name}</h5>
+                        <p>${holiday.dates.join(', ')} (${getHolidayTypeText(holiday.type)})</p>
+                    </div>
+                    <button class="btn btn-danger btn-sm" onclick="removeHoliday(${index})">删除</button>
+                </div>
+            `).join('');
+        }
+
+        function getHolidayTypeText(type) {
+            const map = { rest: '优先休息', work: '必须上班', normal: '正常排班' };
+            return map[type] || type;
+        }
+
+        function removeHoliday(index) {
+            config.holidays.splice(index, 1);
+            renderHolidaysList();
+            renderCalendar('restDaysGrid', toggleRestDay);
+            renderCalendar('fixedShiftsGrid', toggleFixedShiftSelection);
+        }
+
+        let selectedFixedShiftDates = [];
+
+        function updateFixedShiftOptions() {
+            const select = document.getElementById('fixedShiftType');
+            select.innerHTML = '<option value="">请选择</option>' +
+                '<option value="休">休息</option>' +
+                config.shifts.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+        }
+
+        function toggleFixedShiftSelection(element) {
+            const date = element.dataset.date;
+            const index = selectedFixedShiftDates.indexOf(date);
+
+            if (index > -1) {
+                selectedFixedShiftDates.splice(index, 1);
+                element.classList.remove('selected');
+            } else {
+                selectedFixedShiftDates.push(date);
+                element.classList.add('selected');
+            }
+        }
+
+        function addFixedShift() {
+            const staff = document.getElementById('fixedShiftStaff').value;
+            const shift = document.getElementById('fixedShiftType').value;
+
+            if (!staff || !shift) {
+                alert('请选择人员和班次');
+                return;
+            }
+
+            if (selectedFixedShiftDates.length === 0) {
+                alert('请选择至少一个日期');
+                return;
+            }
+
+            selectedFixedShiftDates.forEach(date => {
+                if (!config.fixedShifts[date]) {
+                    config.fixedShifts[date] = {};
+                }
+                config.fixedShifts[date][staff] = shift;
+            });
+
+            selectedFixedShiftDates = [];
+            renderCalendar('fixedShiftsGrid', toggleFixedShiftSelection);
+            renderFixedShiftsList();
+        }
+
+        function renderFixedShiftsList() {
+            const container = document.getElementById('fixedShiftsList');
+            const items = [];
+
+            Object.entries(config.fixedShifts).forEach(([date, staffShifts]) => {
+                Object.entries(staffShifts).forEach(([staff, shift]) => {
+                    items.push({ date, staff, shift });
+                });
+            });
+
+            if (items.length === 0) {
+                container.innerHTML = '<p style="color: #6c757d; text-align: center;">暂无固定班次设置</p>';
+                return;
+            }
+
+            container.innerHTML = items.map((item, index) => `
+                <div class="preference-item">
+                    <div class="preference-info">
+                        <h5>${item.staff}</h5>
+                        <p>${item.date}: ${item.shift}</p>
+                    </div>
+                    <button class="btn btn-danger btn-sm"
+                            onclick="removeFixedShift('${item.date}', '${item.staff}')">删除</button>
+                </div>
+            `).join('');
+        }
+
+        function removeFixedShift(date, staff) {
+            delete config.fixedShifts[date][staff];
+            if (Object.keys(config.fixedShifts[date]).length === 0) {
+                delete config.fixedShifts[date];
+            }
+            renderFixedShiftsList();
+        }
+
+        function generateSchedule() {
+            config.year = parseInt(document.getElementById('year').value);
+            config.month = parseInt(document.getElementById('month').value);
+            config.attendanceRate = parseInt(document.getElementById('attendanceRate').value);
+            config.constraints.balanceWeight = parseFloat(document.getElementById('balanceWeight').value);
+            config.constraints.sameShiftBonus = parseInt(document.getElementById('sameShiftBonus').value);
+            config.constraints.lateToEarlyPenalty = parseInt(document.getElementById('lateToEarlyPenalty').value);
+
+            if (config.groups.length === 0 || config.groups.every(g => g.staff.length === 0)) {
+                alert('请至少添加一个组别和人员');
+                return;
+            }
+
+            document.getElementById('loading').classList.add('active');
+
+            setTimeout(() => {
+                try {
+                    currentSchedule = runSchedulingAlgorithm();
+                    renderScheduleResult();
+                    document.getElementById('loading').classList.remove('active');
+                    document.getElementById('resultModal').classList.add('active');
+                } catch (error) {
+                    document.getElementById('loading').classList.remove('active');
+                    alert('排班失败：' + error.message);
+                }
+            }, 100);
+        }
+
+        function runSchedulingAlgorithm() {
+            const year = config.year;
+            const month = config.month;
+            const daysInMonth = new Date(year, month, 0).getDate();
+            const allStaff = getAllStaff();
+
+            const schedule = {};
+            const shiftCount = {};
+
+            allStaff.forEach(staff => {
+                schedule[staff] = {};
+                shiftCount[staff] = {};
+                config.shifts.forEach(s => shiftCount[staff][s.name] = 0);
+                shiftCount[staff]['休'] = 0;
+            });
+
+            Object.entries(config.fixedShifts).forEach(([date, staffShifts]) => {
+                Object.entries(staffShifts).forEach(([staff, shift]) => {
+                    if (schedule[staff]) {
+                        schedule[staff][date] = shift;
+                    }
+                });
+            });
+
+            config.groups.forEach(group => {
+                const groupStaff = group.staff;
+                const workDaysTarget = Math.floor(daysInMonth * config.attendanceRate / 100);
+                const restDaysTarget = daysInMonth - workDaysTarget;
+
+                groupStaff.forEach(staff => {
+                    const preferredRest = config.staffRestDays[staff] || [];
+                    let restDays = 0;
+
+                    preferredRest.forEach(date => {
+                        if (!schedule[staff][date] && restDays < restDaysTarget) {
+                            schedule[staff][date] = '休';
+                            restDays++;
+                        }
+                    });
+
+                    for (let day = 1; day <= daysInMonth && restDays < restDaysTarget; day++) {
+                        const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                        if (!schedule[staff][date]) {
+                            schedule[staff][date] = '休';
+                            restDays++;
+                        }
+                    }
+                });
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const workingStaff = groupStaff.filter(s => schedule[s][date] !== '休');
+                    const shiftAssignment = assignShiftsForDay(workingStaff, date, schedule, shiftCount);
+
+                    Object.entries(shiftAssignment).forEach(([staff, shift]) => {
+                        schedule[staff][date] = shift;
+                        shiftCount[staff][shift]++;
+                    });
+                }
+            });
+
+            return { schedule, year, month, daysInMonth };
+        }
+
+        function assignShiftsForDay(staff, date, schedule, shiftCount) {
+            const assignment = {};
+            const availableShifts = getShiftsForCount(staff.length);
+
+            const fixedStaff = staff.filter(s => schedule[s][date] && schedule[s][date] !== '休');
+            const flexibleStaff = staff.filter(s => !schedule[s][date]);
+
+            fixedStaff.forEach(s => {
+                assignment[s] = schedule[s][date];
+            });
+
+            const remainingShifts = availableShifts.filter(s => !Object.values(assignment).includes(s));
+
+            if (flexibleStaff.length > 0 && remainingShifts.length > 0) {
+                const staffScores = flexibleStaff.map(s => {
+                    return remainingShifts.map(shift => ({
+                        staff: s,
+                        shift,
+                        score: calculateShiftScore(s, shift, date, schedule, shiftCount)
+                    }));
+                }).flat();
+
+                const usedShifts = new Set();
+                const assignedStaff = new Set();
+
+                staffScores
+                    .sort((a, b) => b.score - a.score)
+                    .forEach(({ staff, shift }) => {
+                        if (!assignedStaff.has(staff) && !usedShifts.has(shift)) {
+                            assignment[staff] = shift;
+                            usedShifts.add(shift);
+                            assignedStaff.add(staff);
+                        }
+                    });
+
+                flexibleStaff.forEach(s => {
+                    if (!assignment[s]) {
+                        const minShift = remainingShifts
+                            .filter(sh => !usedShifts.has(sh))
+                            .sort((a, b) => {
+                                const countA = Object.values(assignment).filter(v => v === a).length;
+                                const countB = Object.values(assignment).filter(v => v === b).length;
+                                return countA - countB;
+                            })[0];
+
+                        if (minShift) {
+                            assignment[s] = minShift;
+                        } else {
+                            assignment[s] = remainingShifts[0] || '早班';
+                        }
+                    }
+                });
+            }
+
+            return assignment;
+        }
+
+        function getShiftsForCount(count) {
+            const shiftMap = {
+                1: ['早7'],
+                2: ['早7', '晚班'],
+                3: ['早7', '中班', '晚班'],
+                4: config.shifts.map(s => s.name)
+            };
+
+            if (count <= 4) {
+                return shiftMap[count] || config.shifts.map(s => s.name);
+            }
+
+            return config.shifts.map(s => s.name);
+        }
+
+        function calculateShiftScore(staff, shift, date, schedule, shiftCount) {
+            let score = 0;
+            const prefs = config.staffShiftPrefs[staff] || {};
+
+            const shiftCounts = shiftCount[staff];
+            const totalAssigned = Object.values(shiftCounts).reduce((a, b) => a + b, 0);
+            score -= (shiftCounts[shift] || 0) * config.constraints.balanceWeight;
+
+            if (prefs[shift] === 'more') score += 5;
+            else if (prefs[shift] === 'fewer') score -= 8;
+
+            const prevDate = getPrevDate(date);
+            const prevShift = schedule[staff] ? schedule[staff][prevDate] : null;
+
+            if (prevShift) {
+                if (prevShift === shift) {
+                    score += config.constraints.sameShiftBonus;
+                }
+
+                if (prevShift === '晚班') {
+                    if (shift === '早7') score -= config.constraints.lateToEarlyPenalty;
+                    if (shift === '早班') score -= config.constraints.lateToEarlyPenalty * 0.7;
+                }
+                if (prevShift === '中班' && shift === '早7') {
+                    score -= 6;
+                }
+
+                if (prevShift === '早7' && shift === '早班') score += 2;
+                if (prevShift === '早班' && shift === '中班') score += 2;
+                if (prevShift === '中班' && shift === '晚班') score += 2;
+            } else {
+                if (shift === '早7') score += 6;
+                if (shift === '早班') score += 4;
+                if (shift === '晚班') score -= 3;
+            }
+
+            return score;
+        }
+
+        function getPrevDate(date) {
+            const d = new Date(date);
+            d.setDate(d.getDate() - 1);
+            return d.toISOString().split('T')[0];
+        }
+
+        function renderScheduleResult() {
+            const container = document.getElementById('scheduleResult');
+            const { schedule, year, month, daysInMonth } = currentSchedule;
+
+            let html = '<table class="schedule-table">';
+
+            html += '<thead><tr>';
+            html += '<th>组别</th><th>姓名</th>';
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const weekDay = new Date(date).getDay();
+                const weekText = ['日', '一', '二', '三', '四', '五', '六'][weekDay];
+                const isWeekend = weekDay === 0 || weekDay === 6;
+                const isHoliday = config.holidays.some(h => h.dates.includes(date));
+
+                let style = '';
+                if (isHoliday) style = 'background: #ffc107; color: #000;';
+                else if (isWeekend) style = 'background: #ff6b6b;';
+
+                html += `<th style="${style}">${day}<br><small>${weekText}</small></th>`;
+            }
+            html += '</tr></thead>';
+
+            html += '<tbody>';
+
+            config.groups.forEach(group => {
+                group.staff.forEach(staff => {
+                    html += '<tr>';
+                    html += `<td><strong>${group.name}</strong></td>`;
+                    html += `<td>${staff}</td>`;
+
+                    for (let day = 1; day <= daysInMonth; day++) {
+                        const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                        const shift = schedule[staff][date] || '休';
+                        const shiftClass = shift === '休' ? 'shift-休' : `shift-${shift}`;
+                        html += `<td class="${shiftClass}">${shift}</td>`;
+                    }
+                    html += '</tr>';
+                });
+
+                html += '<tr class="stats-row">';
+                html += `<td colspan="2"><small>${group.name} 统计</small></td>`;
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const dayShifts = group.staff.map(s => schedule[s][date]);
+
+                    const counts = {};
+                    config.shifts.forEach(s => counts[s.name] = 0);
+                    counts['休'] = 0;
+                    dayShifts.forEach(s => {
+                        counts[s] = (counts[s] || 0) + 1;
+                    });
+
+                    const working = group.staff.length - (counts['休'] || 0);
+                    const rate = Math.round(working / group.staff.length * 100);
+
+                    html += `<td><small>${working}人<br>${rate}%</small></td>`;
+                }
+                html += '</tr>';
+            });
+
+            html += '<tr class="stats-row" style="background: #667eea !important; color: white;">';
+            html += '<td colspan="2"><strong>全员汇总</strong></td>';
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                let totalWorking = 0;
+                let totalStaff = 0;
+
+                config.groups.forEach(group => {
+                    group.staff.forEach(staff => {
+                        totalStaff++;
+                        if (schedule[staff][date] !== '休') {
+                            totalWorking++;
+                        }
+                    });
+                });
+
+                const rate = Math.round(totalWorking / totalStaff * 100);
+                html += `<td><strong>${totalWorking}人<br>${rate}%</strong></td>`;
+            }
+            html += '</tr>';
+
+            html += '</tbody></table>';
+
+            html += '<div style="margin-top: 20px; display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;">';
+            config.shifts.forEach(shift => {
+                html += `
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="width: 30px; height: 30px; background: ${shift.color}; border-radius: 6px;"></div>
+                        <span>${shift.name} (${shift.time})</span>
+                    </div>
+                `;
+            });
+            html += `
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 30px; height: 30px; background: #adb5bd; border-radius: 6px;"></div>
+                    <span>休息</span>
+                </div>
+            `;
+            html += '</div>';
+
+            container.innerHTML = html;
+        }
+
+        function closeModal() {
+            document.getElementById('resultModal').classList.remove('active');
+        }
+
+        function exportToExcel() {
+            if (!currentSchedule) return;
+
+            const { schedule, year, month, daysInMonth } = currentSchedule;
+            const data = [];
+
+            const headerRow = ['组别', '姓名'];
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const weekDay = new Date(date).getDay();
+                const weekText = ['日', '一', '二', '三', '四', '五', '六'][weekDay];
+                headerRow.push(`${day}日(${weekText})`);
+            }
+            data.push(headerRow);
+
+            config.groups.forEach(group => {
+                group.staff.forEach(staff => {
+                    const row = [group.name, staff];
+                    for (let day = 1; day <= daysInMonth; day++) {
+                        const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                        row.push(schedule[staff][date] || '休');
+                    }
+                    data.push(row);
+                });
+
+                const statsRow = [`${group.name}统计`, '在班人数'];
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const working = group.staff.filter(s => schedule[s][date] !== '休').length;
+                    statsRow.push(`${working}人`);
+                }
+                data.push(statsRow);
+                data.push([]);
+            });
+
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, `${year}年${month}月排班表`);
+            XLSX.writeFile(wb, `${year}年${month}月排班表.xlsx`);
+        }
+
+        function saveConfig() {
+            const configStr = JSON.stringify(config, null, 2);
+            const blob = new Blob([configStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `排班配置_${config.year}年${config.month}月.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function loadConfig() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            config = JSON.parse(e.target.result);
+
+                            document.getElementById('year').value = config.year;
+                            document.getElementById('month').value = config.month;
+                            document.getElementById('attendanceRate').value = config.attendanceRate;
+                            document.getElementById('balanceWeight').value = config.constraints.balanceWeight;
+                            document.getElementById('sameShiftBonus').value = config.constraints.sameShiftBonus;
+                            document.getElementById('lateToEarlyPenalty').value = config.constraints.lateToEarlyPenalty;
+
+                            renderShiftConfig();
+                            renderGroupList();
+                            currentGroup = null;
+                            renderStaffList();
+                            updateStaffSelects();
+                            initCalendars();
+
+                            alert('配置加载成功！');
+                        } catch (err) {
+                            alert('配置文件格式错误');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        }
+
+        document.getElementById('year').addEventListener('change', initCalendars);
+        document.getElementById('month').addEventListener('change', initCalendars);
+    </script>
+</body>
+</html>
